@@ -19,14 +19,9 @@ class RoleBasedAjax {
 
 
 	/**
-	 * Adds a ajax action hook if the current user has the required role or capability.
-	 *
-	 * Attention: This function uses the standard WordPress capabilities to determine if the
-	 * hook should be added for the current user. This function may not work properly, 
-	 * if the default wordpress capabilities are changed.
+	 * Adds a ajax action hook if the current user has the required role.
 	 *
 	 * @uses wp_get_current_user()
-	 * @uses current_user_can()
 	 * @uses add_action()
 	 * @uses check_ajax_referer()
 	 * @uses wp_create_nonce()
@@ -43,55 +38,31 @@ class RoleBasedAjax {
 		$role = strtolower( $role );
 		$all_users = false;
 		$hook_prefix = 'wp_ajax_';
-		$capability = 'manage_options';
-		$current_user_roles = array();
-
+		
 		if ( ! function_exists( 'wp_create_nonce' ) ) {
 			require_once ABSPATH . '/wp-includes/pluggable.php';
 		}
+		
+		$current_user = \wp_get_current_user();
+		
+		if ( ! $current_user->exists() ) {
+			$current_user_roles = array();
+		} else {
+			$wp_user_roles = $current_user->roles;
+			$implicit_user_roles = $this->get_implicit_roles_for( $wp_user_roles );
+			$current_user_roles =  \array_merge( $current_user->roles, $implicit_user_roles );
+		}
 
-		switch ( $role ) {
-			case 'all':
-				$all_users = true;
-				break;
-			case 'subscriber':
-				$capability = 'read';
-				break;
-			case 'contributor':
-				$capability = 'edit_posts';
-				break;
-			case 'author':
-				$capability = 'upload_files';
-				break;
-			case 'editor':
-				$capability = 'unfiltered_html';
-				break;
-			case 'super_admin':
-				$capability = 'setup_network';
-				break;
-			case 'administrator':
-				$capability = 'manage_options';
-				break;
-			default:
+		/* Use this filter to customize the current user roles at runtime. */
+		$current_user_roles = \apply_filters( 'role_based_ajax_customize_roles', $current_user_roles );
 
-				/* Handles non default WordPress roles */
-				$current_user = \wp_get_current_user();
-
-				if ( ! $current_user->exists() ) {
-					$capability = 'manage_options';
-				} else {
-					$current_user_roles = $current_user->roles;
-				}
-
-				/* Use this filter to customize the current user roles at runtime. */
-				$current_user_roles = \apply_filters( 'role_based_ajax_customize_roles', $current_user_roles );
-
-				break;
+		if ( 'all' === $role ) {
+			$all_users = true;
 		}
 
 		$full_action_hook = "{$hook_prefix}{$action_hook}";
 		$full_nopriv_action_hook = "{$hook_prefix}nopriv_{$action_hook}";
-		if ( $all_users || in_array( $role , $current_user_roles ) || \current_user_can( $capability ) ) {
+		if ( $all_users || in_array( $role , $current_user_roles ) ) {
 			\add_action( $full_action_hook, $callback );
 		}
 
@@ -125,6 +96,54 @@ class RoleBasedAjax {
 		}
 
 		return \wp_create_nonce( $action_hook );
+
+	}
+
+	/**
+	 * Extends the default wp user roles array
+	 * 
+	 * @param Array $user_roles
+	 * @return Array
+	 * 
+	 */
+	private function get_implicit_roles_for( Array $user_roles ) {
+
+		if ( empty( $user_roles ) ) {
+			return array();
+		}
+
+		$roles_map = array(
+			'super_admin' => 5,
+			'administrator' => 4,
+			'editor' => 3,
+			'author' => 2,
+			'contributor' => 1,
+			'subscriber' => 0
+		);
+
+		$role = '';
+		$roles_number = 0;
+		foreach ( $roles_map as $default_wp_role => $default_roles_number ) {
+
+			if ( \in_array( $default_wp_role, $user_roles ) ) {
+				$role = $default_wp_role;
+				$roles_number = $default_roles_number;
+				break;
+			}
+
+		}
+
+		if ( ! isset( $roles_map[$role] ) ) {
+			return array();
+		}
+
+		$allowed_roles = \array_slice(
+			$roles_map, -($roles_number+1), $roles_number+1
+		);
+
+		return \array_keys(
+			$allowed_roles
+		);
 
 	}
 
