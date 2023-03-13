@@ -148,31 +148,31 @@ class RoleBasedAjax {
 	}
 
 	public function add_for_all( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'all' );
+		return $this->add_for( $action_hook, $callback, 'all' );
 	}
 
 	public function add_for_subscriber( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'subscriber' );
+		return $this->add_for( $action_hook, $callback, 'subscriber' );
 	}
 
 	public function add_for_contributor( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'contributor' );
+		return $this->add_for( $action_hook, $callback, 'contributor' );
 	}
 
 	public function add_for_author( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'author' );
+		return $this->add_for( $action_hook, $callback, 'author' );
 	}
 
 	public function add_for_editor( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'editor' );
+		return $this->add_for( $action_hook, $callback, 'editor' );
 	}
 
 	public function add_for_admin( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'administrator' );
+		return $this->add_for( $action_hook, $callback, 'administrator' );
 	}
 
 	public function add_for_super_admin( String $action_hook, String $callback ) {
-		$this->add_for( $action_hook, $callback, 'super_admin' );
+		return $this->add_for( $action_hook, $callback, 'super_admin' );
 	}
 
 	public function set_auto_nonce( bool $auto_nonce_check ) {
