@@ -62,27 +62,33 @@ class RoleBasedAjax {
 
 		$full_action_hook = "{$hook_prefix}{$action_hook}";
 		$full_nopriv_action_hook = "{$hook_prefix}nopriv_{$action_hook}";
+		$action_added = false;
 		if ( $all_users || in_array( $role , $current_user_roles ) ) {
 			\add_action( $full_action_hook, $callback );
+			$action_added = true;
 		}
 
+		$nopriv_action_added = false;
 		if ( $all_users ) {
 			\add_action( $full_nopriv_action_hook, $callback );
+			$nopriv_action_added = true;
 		}
 
 		/* Adds high priority action hooks for catching nonce checks. */
 		if ( $this->auto_nonce_check ) {
 
-			\add_action(
-				$full_action_hook,
-				function() {
-					$action_hook = $_REQUEST['action'];
-					\check_ajax_referer( $action_hook );
-				},
-				1
-			);
+			if ( $action_added ) { 
+				\add_action(
+					$full_action_hook,
+					function() {
+						$action_hook = $_REQUEST['action'];
+						\check_ajax_referer( $action_hook );
+					},
+					1
+				);
+			}
 
-			if ( $all_users ) {
+			if ( $all_users && $nopriv_action_added ) {
 				\add_action(
 					$full_nopriv_action_hook,
 					function() {
